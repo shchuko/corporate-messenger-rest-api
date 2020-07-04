@@ -1,16 +1,21 @@
 package com.shchuko.corporatemessenger.model;
 
 import lombok.Data;
+import lombok.EqualsAndHashCode;
 import org.springframework.data.annotation.CreatedDate;
 
 import javax.persistence.*;
 import java.util.Date;
 
+/**
+ * @author shchuko
+ */
 @Entity
-@Table(name = "message")
+@Table(name = "message", schema = "public")
 @Data
+@EqualsAndHashCode(callSuper = true)
 public class Message extends BaseEntityWithStatus {
-    @Column(name = "chat_id")
+    @Column(name = "chat_id", insertable = false, updatable = false)
     private long chatId;
 
     @Column(name = "author_id")
