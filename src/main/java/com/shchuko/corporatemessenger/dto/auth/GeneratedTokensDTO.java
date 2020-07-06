@@ -12,6 +12,11 @@ import lombok.NoArgsConstructor;
 @AllArgsConstructor
 public class GeneratedTokensDTO {
     String sessionToken;
+    long sessionExpiresOn;
+
     String refreshToken;
+    long refreshExpiresOn;
+
     String username;
+
 }
