@@ -10,7 +10,7 @@ import lombok.NoArgsConstructor;
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
-public class TokenUpdateRequestDTO {
+public class TokensRefreshRequestDTO {
     String oldSessionToken;
     boolean newRefreshTokenNeeded;
 }
