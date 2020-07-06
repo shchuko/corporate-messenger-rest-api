@@ -4,7 +4,8 @@ import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
-import java.util.Date;
+import javax.validation.constraints.NotBlank;
+import javax.validation.constraints.NotNull;
 
 /**
  * @author shchuko
@@ -13,9 +14,14 @@ import java.util.Date;
 @AllArgsConstructor
 @NoArgsConstructor
 public class GetMessagesRequestDTO {
+    @NotBlank
     private String action;
+
+    @NotBlank
     private String chatName;
-    private Date timestamp;
+
+    @NotNull
+    private Long timestamp;
 
     public enum SupportedActions {
         GET_MESSAGES_BEFORE_TIMESTAMP,

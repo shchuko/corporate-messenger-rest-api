@@ -5,6 +5,8 @@ import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+import javax.validation.constraints.NotBlank;
+
 /**
  * @author shchuko
  */
@@ -12,6 +14,9 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor
 @AllArgsConstructor
 public class SendMessageRequestDTO {
+    @NotBlank
     private String chatName;
+
+    @NotBlank
     private String messageContent;
 }

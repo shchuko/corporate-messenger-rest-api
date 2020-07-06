@@ -41,7 +41,7 @@ public class ChatServiceImpl implements ChatService {
 
     @Override
     public Chat createNewChat(Chat chat) {
-        return chatRepository.saveAndFlush(chat);
+        return chatRepository.save(chat);
     }
 
     @Override
