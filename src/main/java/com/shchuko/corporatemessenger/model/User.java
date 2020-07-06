@@ -1,10 +1,11 @@
 package com.shchuko.corporatemessenger.model;
 
 import lombok.Data;
-import lombok.EqualsAndHashCode;
 
 import javax.persistence.*;
 import java.util.List;
+import java.util.Objects;
+import java.util.Set;
 
 /**
  * @author shchuko
@@ -12,7 +13,6 @@ import java.util.List;
 @Entity
 @Table(name = "user", schema = "public")
 @Data
-@EqualsAndHashCode(callSuper = true)
 public class User extends BaseEntityWithStatus {
     @Column(name = "username", unique = true)
     private String username;
@@ -24,17 +24,36 @@ public class User extends BaseEntityWithStatus {
     @JoinTable(name = "user_role",
             joinColumns = {@JoinColumn(name = "user_id", referencedColumnName = "id")},
             inverseJoinColumns = {@JoinColumn(name = "role_id", referencedColumnName = "id")})
-    private List<Role> roles;
+    private Set<Role> roles;
 
     @ManyToMany(fetch = FetchType.LAZY)
     @JoinTable(name = "user_chat",
             joinColumns = {@JoinColumn(name = "user_id", referencedColumnName = "id")},
             inverseJoinColumns = {@JoinColumn(name = "chat_id", referencedColumnName = "id")})
-    private List<Chat> chats;
+    private Set<Chat> chats;
 
     @ManyToMany(fetch = FetchType.LAZY)
     @JoinTable(name = "user_message",
             joinColumns = {@JoinColumn(name = "user_id", referencedColumnName = "id")},
             inverseJoinColumns = {@JoinColumn(name = "message_id", referencedColumnName = "id")})
     private List<Message> messages;
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+        if (!super.equals(o)) return false;
+        User user = (User) o;
+        return Objects.equals(this.getId(), user.getId());
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(this.getId());
+    }
+
+    @Override
+    public String toString() {
+        return this.getClass().getCanonicalName() + super.toString();
+    }
 }

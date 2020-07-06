@@ -66,10 +66,28 @@ public class UserServiceImpl implements UserService {
         userRoles.add(RoleTypes.ROLE_USER);
 
         user.setPasswordHash(passwordEncoder.encode(user.getPasswordHash()));
-        user.setRoles(userRoles.stream().map(roleType -> roleRepository.findByName(roleType)).collect(Collectors.toList()));
+        user.setRoles(userRoles.stream().map(roleType -> roleRepository.findByName(roleType)).collect(Collectors.toSet()));
         user.setStatus(EntityStatus.ACTIVE);
 
         return userRepository.save(user);
+    }
+
+    /**
+     * Set new password for user
+     *
+     * @param user User to reset password
+     * @param oldPassword Old password
+     * @param newPassword New password
+     * @return User with updated password
+     */
+    public boolean updatePassword(User user, String oldPassword, String newPassword) {
+        if (!passwordEncoder.matches(oldPassword, user.getPasswordHash())) {
+            return false;
+        }
+
+        user.setPasswordHash(passwordEncoder.encode(newPassword));
+        userRepository.save(user);
+        return true;
     }
 
     /**
