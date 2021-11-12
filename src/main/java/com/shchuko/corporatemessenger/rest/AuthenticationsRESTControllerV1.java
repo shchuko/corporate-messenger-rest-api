@@ -1,9 +1,6 @@
 package com.shchuko.corporatemessenger.rest;
 
-import com.shchuko.corporatemessenger.dto.auth.LoginRequestDTO;
-import com.shchuko.corporatemessenger.dto.auth.PasswordUpdateRequestDTO;
-import com.shchuko.corporatemessenger.dto.auth.SingUpRequestDTO;
-import com.shchuko.corporatemessenger.dto.auth.TokenUpdateRequestDTO;
+import com.shchuko.corporatemessenger.dto.auth.*;
 import com.shchuko.corporatemessenger.model.User;
 import com.shchuko.corporatemessenger.security.jwt.JWTTokenProvider;
 import com.shchuko.corporatemessenger.service.UserService;
@@ -22,9 +19,6 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 import javax.servlet.http.HttpServletRequest;
-import java.util.Date;
-import java.util.HashMap;
-import java.util.Map;
 
 /**
  * @author shchuko
@@ -94,28 +88,7 @@ public class AuthenticationsRESTControllerV1 {
     }
 
     @PostMapping("tokens-refresh")
-    public ResponseEntity<?> getNewTokens(@RequestBody TokenUpdateRequestDTO requestDTO, HttpServletRequest request, Authentication authentication) {
-        String sessionToken = requestDTO.getOldSessionToken();
-        String refreshToken = jwtTokenProvider.resolveTokenFromRequestHeader(request);
-
-        String sessionTokenUsername = jwtTokenProvider.getTokenUsername(sessionToken);
-        String refreshTokenUsername = jwtTokenProvider.getTokenUsername(refreshToken);
-
-        // If refreshTokenUsername != sessionTokenUsername then sessionTokenUsername is not related to this user
-        // and we can't invalidate it
-        // Otherwise, adding it into the blacklist for further requests
-        if (refreshTokenUsername.equals(sessionTokenUsername) && jwtTokenProvider.validateAnyToken(sessionToken)) {
-            // sessionToken can be invalidated (moved to blacklist)
-            Date expiresOn = jwtTokenProvider.getTokenExpiration(sessionToken);
-        }
-
-        // If required, generating new refresh token and invalidating old one adding it into the
-        // blacklist for further requests
-        if (requestDTO.isNewRefreshTokenNeeded() && jwtTokenProvider.validateAnyToken(refreshTokenUsername)) {
-            // refreshToken can be invalidated (moved to blacklist)
-            Date expiresOn = jwtTokenProvider.getTokenExpiration(refreshToken);
-        }
-
+    public ResponseEntity<?> getNewTokens(@RequestBody TokensRefreshRequestDTO requestDTO, HttpServletRequest request, Authentication authentication) {
         return generateTokens(authentication.getName(), requestDTO.isNewRefreshTokenNeeded());
     }
 
@@ -149,13 +122,10 @@ public class AuthenticationsRESTControllerV1 {
             throw new UsernameNotFoundException("User not found " + username);
         }
 
-        Map<Object, Object> response = new HashMap<>();
-        response.put("username", username);
-        response.put("sessionToken", jwtTokenProvider.createSessionToken(username));
-
-        if (generateNewRefreshToken) {
-            response.put("refreshToken", jwtTokenProvider.createRefreshToken(username));
-        }
+        GeneratedTokensDTO response = new GeneratedTokensDTO();
+        response.setUsername(username);
+        response.setSessionToken(jwtTokenProvider.createSessionToken(username));
+        response.setRefreshToken(generateNewRefreshToken ? jwtTokenProvider.createRefreshToken(username) : null);
 
         return ResponseEntity.status(HttpStatus.CREATED).body(response);
     }
