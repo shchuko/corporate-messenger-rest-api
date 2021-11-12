@@ -1,6 +1,8 @@
 package com.shchuko.corporatemessenger.model;
 
+import lombok.AllArgsConstructor;
 import lombok.Data;
+import lombok.NoArgsConstructor;
 import org.springframework.data.annotation.CreatedDate;
 
 import javax.persistence.*;
@@ -13,6 +15,8 @@ import java.util.Objects;
 @Entity
 @Table(name = "message", schema = "public")
 @Data
+@NoArgsConstructor
+@AllArgsConstructor
 public class Message extends BaseEntityWithStatus {
     @Column(name = "chat_id", insertable = false, updatable = false)
     private long chatId;

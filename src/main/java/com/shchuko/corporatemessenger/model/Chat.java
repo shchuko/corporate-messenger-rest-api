@@ -1,6 +1,8 @@
 package com.shchuko.corporatemessenger.model;
 
+import lombok.AllArgsConstructor;
 import lombok.Data;
+import lombok.NoArgsConstructor;
 
 import javax.persistence.*;
 import java.util.*;
@@ -11,6 +13,8 @@ import java.util.*;
 @Entity
 @Table(name = "chat", schema = "public")
 @Data
+@AllArgsConstructor
+@NoArgsConstructor
 public class Chat extends BaseEntityWithStatus {
     @Column(name = "name")
     private String name;
