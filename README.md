@@ -51,7 +51,7 @@ Header: `Content-Type: application/json`
   
 #### Request
 
-Type: `GET`
+Type: `PUT` (using PUT here)
 
 Endpoint: `/api/v1/messenger/messages`
 

@@ -55,7 +55,7 @@ public class MessengerRESTControllerV1 {
         this.messageService = messageService;
     }
 
-    @GetMapping(value = MESSAGES_ENDPOINT)
+    @PutMapping(value = MESSAGES_ENDPOINT)
     public ResponseEntity<GetMessagesResponseDTO> getMessages(@RequestBody @Valid GetMessagesRequestDTO requestDTO, Authentication authentication) {
         Chat chat = chatService.getChatByName(requestDTO.getChatName());
         if (chat == null) {
