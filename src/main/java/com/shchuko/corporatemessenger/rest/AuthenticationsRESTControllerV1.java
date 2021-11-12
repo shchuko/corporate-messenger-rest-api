@@ -12,13 +12,10 @@ import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.AuthenticationException;
-import org.springframework.security.core.userdetails.UsernameNotFoundException;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
 import javax.servlet.http.HttpServletRequest;
+import javax.validation.Valid;
 
 /**
  * @author shchuko
@@ -26,10 +23,13 @@ import javax.servlet.http.HttpServletRequest;
 @RestController
 @RequestMapping(value = "/api/v1/auth")
 public class AuthenticationsRESTControllerV1 {
+    private static final String LOGIN_ENDPOINT = "login";
+    private static final String SIGN_UP_ENDPOINT = "sign-up";
+    private static final String TOKENS_REFRESH_ENDPOINT = "tokens-refresh";
+    private static final String PASSWORD_UPDATE_ENDPOINT = "password-update";
+
     private AuthenticationManager authenticationManager;
-
     private JWTTokenProvider jwtTokenProvider;
-
     private UserService userService;
 
     @Autowired
@@ -47,8 +47,8 @@ public class AuthenticationsRESTControllerV1 {
         this.userService = userService;
     }
 
-    @PostMapping("login")
-    public ResponseEntity<?> login(@RequestBody LoginRequestDTO requestDTO) {
+    @PostMapping(LOGIN_ENDPOINT)
+    public ResponseEntity<?> login(@RequestBody @Valid LoginRequestDTO requestDTO) {
         try {
             String username = requestDTO.getUsername();
             String password = requestDTO.getPassword();
@@ -57,53 +57,50 @@ public class AuthenticationsRESTControllerV1 {
 
             return generateTokens(username);
         } catch (AuthenticationException e) {
-            throw new BadCredentialsException("Invalid username or password", e);
+            return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
         }
     }
 
-    @PostMapping("sign-up")
-    public ResponseEntity<?> signUp(@RequestBody SingUpRequestDTO requestDTO) {
-        try {
-            String username = requestDTO.getUsername();
-            String password = requestDTO.getPassword();
+    @PostMapping(SIGN_UP_ENDPOINT)
+    public ResponseEntity<?> signUp(@RequestBody @Valid SingUpRequestDTO requestDTO) {
+        String username = requestDTO.getUsername();
+        String password = requestDTO.getPassword();
 
-            if (userService.findByUsername(username) != null) {
-                return ResponseEntity.status(HttpStatus.CONFLICT).build();
-            }
-
-            if (username.isEmpty() || password.isEmpty()) {
-                return ResponseEntity.status(HttpStatus.NOT_ACCEPTABLE).build();
-            }
-
-            User user = new User();
-            user.setUsername(username);
-            user.setPasswordHash(password);
-
-            userService.register(user);
-
-            return login(new LoginRequestDTO(username, password));
-        } catch (AuthenticationException e) {
-            throw new BadCredentialsException("Invalid username or password", e);
+        if (userService.findByUsername(username) != null) {
+            return ResponseEntity.status(HttpStatus.CONFLICT).build();
         }
+
+        if (username.isEmpty() || password.isEmpty()) {
+            return ResponseEntity.status(HttpStatus.NOT_ACCEPTABLE).build();
+        }
+
+        User user = new User();
+        user.setUsername(username);
+        user.setPasswordHash(password);
+
+        userService.register(user);
+
+        return login(new LoginRequestDTO(username, password));
     }
 
-    @PostMapping("tokens-refresh")
-    public ResponseEntity<?> getNewTokens(@RequestBody TokensRefreshRequestDTO requestDTO, HttpServletRequest request, Authentication authentication) {
-        return generateTokens(authentication.getName(), requestDTO.isNewRefreshTokenNeeded());
+    @PostMapping(TOKENS_REFRESH_ENDPOINT)
+    public ResponseEntity<?> getNewTokens(@RequestBody @Valid TokensRefreshRequestDTO requestDTO, HttpServletRequest request, Authentication authentication) {
+        return generateTokens(authentication.getName(), requestDTO.getNewRefreshTokenNeeded());
     }
 
-    @PostMapping("password-update")
-    public ResponseEntity<?> passwordUpdate(@RequestBody PasswordUpdateRequestDTO requestDTO, Authentication authentication) {
+    @PutMapping(PASSWORD_UPDATE_ENDPOINT)
+    public ResponseEntity<?> passwordUpdate(@RequestBody @Valid PasswordUpdateRequestDTO requestDTO, Authentication authentication) {
         try {
             User user = userService.findByUsername(authentication.getName());
+
             String oldPassword = requestDTO.getOldPassword();
             String newPassword = requestDTO.getNewPassword();
 
-            if (user == null || oldPassword == null || newPassword == null || newPassword.isEmpty()) {
+            if (newPassword.isEmpty()) {
                 return ResponseEntity.badRequest().build();
             }
 
-            if (userService.updatePassword(user, oldPassword, newPassword)) {
+            if (newPassword.equals(oldPassword) || userService.updatePassword(user, oldPassword, newPassword)) {
                 return ResponseEntity.status(HttpStatus.CREATED).build();
             }
             return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
@@ -116,16 +113,23 @@ public class AuthenticationsRESTControllerV1 {
         return generateTokens(username, true);
     }
 
-    private ResponseEntity<?> generateTokens(String username, boolean generateNewRefreshToken) {
+    private ResponseEntity<?> generateTokens(String username, boolean getNewRefreshToken) {
         User user = userService.findByUsername(username);
         if (user == null) {
-            throw new UsernameNotFoundException("User not found " + username);
+            return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
         }
+
+        String sessionToken = jwtTokenProvider.createSessionToken(username);
+        String refreshToken = getNewRefreshToken ? jwtTokenProvider.createRefreshToken(username) : null;
 
         GeneratedTokensDTO response = new GeneratedTokensDTO();
         response.setUsername(username);
-        response.setSessionToken(jwtTokenProvider.createSessionToken(username));
-        response.setRefreshToken(generateNewRefreshToken ? jwtTokenProvider.createRefreshToken(username) : null);
+
+        response.setSessionToken(sessionToken);
+        response.setSessionExpiresOn(jwtTokenProvider.getTokenExpiration(sessionToken).getTime() / 1000);
+
+        response.setRefreshToken(refreshToken);
+        response.setRefreshExpiresOn(getNewRefreshToken ? jwtTokenProvider.getTokenExpiration(refreshToken).getTime() / 1000 : 0);
 
         return ResponseEntity.status(HttpStatus.CREATED).body(response);
     }

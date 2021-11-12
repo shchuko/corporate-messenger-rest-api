@@ -4,6 +4,9 @@ import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+import javax.validation.constraints.NotBlank;
+import javax.validation.constraints.NotNull;
+
 /**
  * @author shchuko
  */
@@ -11,6 +14,9 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor
 @AllArgsConstructor
 public class TokensRefreshRequestDTO {
+    @NotBlank
     String oldSessionToken;
-    boolean newRefreshTokenNeeded;
+
+    @NotNull
+    Boolean newRefreshTokenNeeded;
 }
