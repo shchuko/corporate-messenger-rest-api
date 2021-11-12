@@ -1,0 +1,267 @@
+<databaseChangeLog xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+                   xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+                   xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+                        http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-3.4.xsd">
+
+    <!-- Creating 'user' table -->
+    <changeSet id="1.0.0" author="Vladislav Yaroshchuk">
+        <createTable tableName="user">
+            <column name="id" type="BIGINT" autoIncrement="true">
+                <constraints primaryKey="true" nullable="false"/>
+            </column>
+
+            <column name="login" type="VARCHAR(100)">
+                <constraints nullable="false"/>
+            </column>
+
+            <column name="password_hash" type="VARCHAR(255)">
+                <constraints nullable="false"/>
+            </column>
+
+            <column name="status" type="VARCHAR(25)" defaultValue="ACTIVE">
+                <constraints nullable="false"/>
+            </column>
+        </createTable>
+    </changeSet>
+
+    <!-- Creating 'role' table -->
+    <changeSet id="1.0.1" author="Vladislav Yaroshchuk">
+        <createTable tableName="role">
+            <column name="id" type="BIGINT" autoIncrement="true">
+                <constraints primaryKey="true" nullable="false"/>
+            </column>
+
+            <column name="name" type="VARCHAR(100)">
+                <constraints nullable="false"/>
+            </column>
+
+            <column name="status" type="VARCHAR(25)" defaultValue="ACTIVE">
+                <constraints nullable="false"/>
+            </column>
+        </createTable>
+    </changeSet>
+
+    <!-- Creating many-to-many 'user_role' table -->
+    <changeSet id="1.0.2" author="Vladislav Yaroshchuk">
+        <createTable tableName="user_role">
+            <column name="user_id" type="BIGINT">
+                <constraints primaryKey="true"
+                             primaryKeyName="pk_user_role"
+                             nullable="false"/>
+            </column>
+
+            <column name="role_id" type="BIGINT">
+                <constraints primaryKey="true"
+                             primaryKeyName="pk_user_role"
+                             nullable="false"/>
+            </column>
+        </createTable>
+    </changeSet>
+
+    <!-- Adding FK, 'user'<->'role' through 'user_role' table (many-to-many) -->
+    <changeSet id="1.0.3" author="Vladislav Yaroshchuk">
+        <addForeignKeyConstraint baseTableName="user_role"
+                                 baseColumnNames="user_id"
+                                 constraintName="fk_user_role_user"
+                                 referencedTableName="user"
+                                 referencedColumnNames="id"
+                                 onDelete="CASCADE"
+                                 onUpdate="NO ACTION"/>
+    </changeSet>
+
+    <changeSet id="1.0.4" author="Vladislav Yaroshchuk">
+        <addForeignKeyConstraint baseTableName="user_role"
+                                 baseColumnNames="role_id"
+                                 constraintName="fk_user_role_role"
+                                 referencedTableName="role"
+                                 referencedColumnNames="id"
+                                 onDelete="CASCADE"
+                                 onUpdate="NO ACTION"/>
+    </changeSet>
+
+    <!-- Creating 'chat' table -->
+    <changeSet id="1.0.5" author="Vladislav Yaroshchuk">
+        <createTable tableName="chat">
+            <column name="id" type="BIGINT" autoIncrement="true">
+                <constraints primaryKey="true" nullable="false"/>
+            </column>
+
+            <column name="name" type="VARCHAR(50)">
+                <constraints nullable="false"/>
+            </column>
+
+            <column name="status" type="VARCHAR(25)" defaultValue="ACTIVE">
+                <constraints nullable="false"/>
+            </column>
+        </createTable>
+    </changeSet>
+
+    <!-- Creating many-to-many 'user_chat' table -->
+    <changeSet id="1.0.6" author="Vladislav Yaroshchuk">
+        <createTable tableName="user_chat">
+            <column name="user_id" type="BIGINT">
+                <constraints primaryKey="true"
+                             primaryKeyName="pk_user_chat"
+                             nullable="false"/>
+            </column>
+
+            <column name="chat_id" type="BIGINT">
+                <constraints primaryKey="true"
+                             primaryKeyName="pk_user_chat"
+                             nullable="false"/>
+            </column>
+        </createTable>
+    </changeSet>
+
+    <!-- Adding FK, 'user'<->'chat' through 'user_chat' table (many-to-many) -->
+    <changeSet id="1.0.7" author="Vladislav Yaroshchuk">
+        <addForeignKeyConstraint baseTableName="user_chat"
+                                 baseColumnNames="user_id"
+                                 constraintName="fk_user_chat_user"
+                                 referencedTableName="user"
+                                 referencedColumnNames="id"/>
+    </changeSet>
+
+    <changeSet id="1.0.8" author="Vladislav Yaroshchuk">
+        <addForeignKeyConstraint baseTableName="user_chat"
+                                 baseColumnNames="chat_id"
+                                 constraintName="fk_user_chat_chat"
+                                 referencedTableName="chat"
+                                 referencedColumnNames="id"/>
+    </changeSet>
+
+    <!-- Creating 'message' table -->
+    <changeSet id="1.0.9" author="Vladislav Yaroshchuk">
+        <createTable tableName="message">
+            <column name="id" type="BIGINT" autoIncrement="true">
+                <constraints primaryKey="true" nullable="false"/>
+            </column>
+
+            <column name="chat_id" type="BIGINT">
+                <constraints nullable="true"/>
+            </column>
+
+            <column name="author_id" type="BIGINT">
+                <constraints nullable="true"/>
+            </column>
+
+            <column name="time_stamp" type="TIMESTAMP WITHOUT TIME ZONE">
+                <constraints nullable="false"/>
+            </column>
+
+            <column name="content" type="VARCHAR(255)">
+                <constraints nullable="false"/>
+            </column>
+
+            <column name="status" type="VARCHAR(25)" defaultValue="ACTIVE">
+                <constraints nullable="false"/>
+            </column>
+        </createTable>
+    </changeSet>
+
+    <!-- Adding FK, 'message'->'chat' -->
+    <changeSet id="1.0.10" author="Vladislav Yaroshchuk">
+        <addForeignKeyConstraint baseTableName="message"
+                                 baseColumnNames="chat_id"
+                                 constraintName="fk_message_chat_id"
+                                 referencedTableName="chat"
+                                 referencedColumnNames="id"
+                                 onUpdate="NO ACTION"
+                                 onDelete="SET NULL"/>
+    </changeSet>
+
+    <!-- Adding FK, 'message'->'user' (author) -->
+    <changeSet id="1.0.11" author="Vladislav Yaroshchuk">
+        <addForeignKeyConstraint baseTableName="message"
+                                 baseColumnNames="author_id"
+                                 constraintName="fk_message_author_id"
+                                 referencedTableName="user"
+                                 referencedColumnNames="id"
+                                 onUpdate="NO ACTION"
+                                 onDelete="SET NULL"/>
+    </changeSet>
+
+    <!-- Creating 'user_message' table (many-to-many) -->
+    <changeSet id="1.0.12" author="Vladislav Yaroshchuk">
+        <createTable tableName="user_message">
+            <column name="user_id" type="BIGINT">
+                <constraints primaryKey="true"
+                             primaryKeyName="pk_user_message"
+                             nullable="false"/>
+            </column>
+
+            <column name="message_id" type="BIGINT">
+                <constraints primaryKey="true"
+                             primaryKeyName="pk_user_message"
+                             nullable="false"/>
+            </column>
+
+            <column name="is_received" type="BOOLEAN">
+                <constraints nullable="false"/>
+            </column>
+
+            <column name="is_read" type="BOOLEAN">
+                <constraints nullable="false"/>
+            </column>
+
+        </createTable>
+    </changeSet>
+
+    <!-- Adding FK, 'user'<->'message' through 'user_message' table (many-to-many) -->
+    <changeSet id="1.0.13" author="Vladislav Yaroshchuk">
+        <addForeignKeyConstraint baseColumnNames="message_id"
+                                 baseTableName="user_message"
+                                 constraintName="fk_user_message_message_id"
+                                 referencedColumnNames="id"
+                                 referencedTableName="message"
+                                 onUpdate="NO ACTION"
+                                 onDelete="CASCADE"/>
+    </changeSet>
+
+    <changeSet id="1.0.14" author="Vladislav Yaroshchuk">
+        <addForeignKeyConstraint baseColumnNames="user_id"
+                                 baseTableName="user_message"
+                                 constraintName="fk_user_message_user_id"
+                                 referencedColumnNames="id"
+                                 referencedTableName="user"
+                                 onUpdate="NO ACTION"
+                                 onDelete="CASCADE"/>
+    </changeSet>
+
+    <!-- Creating 'session' table (for user sessions) -->
+    <changeSet id="1.0.15" author="Vladislav Yaroshchuk">
+        <createTable tableName="session">
+            <column name="id" type="BIGINT" autoIncrement="true">
+                <constraints primaryKey="true" nullable="false"/>
+            </column>
+
+            <column name="user_id" type="BIGINT">
+                <constraints nullable="false"/>
+            </column>
+
+            <column name="token" type="VARCHAR(255)">
+                <constraints nullable="true"/>
+            </column>
+
+            <column name="refresh_token" type="VARCHAR(255)">
+                <constraints nullable="false"/>
+            </column>
+
+            <column name="expires_on" type="TIMESTAMP WITHOUT TIME ZONE">
+                <constraints nullable="true"/>
+            </column>
+        </createTable>
+    </changeSet>
+
+    <!-- Add FK, 'session'->'user' -->
+    <changeSet id="1.0.16" author="Vladislav Yaroshchuk">
+        <addForeignKeyConstraint baseColumnNames="user_id"
+                                 baseTableName="session"
+                                 constraintName="fk_session_user_id"
+                                 referencedColumnNames="id"
+                                 referencedTableName="user"
+                                 onUpdate="NO ACTION"
+                                 onDelete="CASCADE"/>
+    </changeSet>
+
+</databaseChangeLog>
