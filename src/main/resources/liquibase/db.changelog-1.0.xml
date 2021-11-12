@@ -6,19 +6,19 @@
     <!-- Creating 'user' table -->
     <changeSet id="1.0.0" author="Vladislav Yaroshchuk">
         <createTable schemaName="public" tableName="user">
-            <column name="id" type="BIGINT" autoIncrement="true">
+            <column name="id" type="bigint" autoIncrement="true">
                 <constraints primaryKey="true" nullable="false"/>
             </column>
 
-            <column name="username" type="VARCHAR(100)">
+            <column name="username" type="varchar(100)">
                 <constraints nullable="false" unique="true"/>
             </column>
 
-            <column name="password_hash" type="VARCHAR(255)">
+            <column name="password_hash" type="varchar(255)">
                 <constraints nullable="false"/>
             </column>
 
-            <column name="status" type="VARCHAR(25)" defaultValue="ACTIVE">
+            <column name="status" type="varchar(25)" defaultValue="ACTIVE">
                 <constraints nullable="false"/>
             </column>
         </createTable>
@@ -27,15 +27,15 @@
     <!-- Creating 'role' table -->
     <changeSet id="1.0.1" author="Vladislav Yaroshchuk">
         <createTable schemaName="public" tableName="role">
-            <column name="id" type="BIGINT" autoIncrement="true">
+            <column name="id" type="bigint" autoIncrement="true">
                 <constraints primaryKey="true" nullable="false"/>
             </column>
 
-            <column name="name" type="VARCHAR(100)">
+            <column name="name" type="varchar(100)">
                 <constraints nullable="false"/>
             </column>
 
-            <column name="status" type="VARCHAR(25)" defaultValue="ACTIVE">
+            <column name="status" type="varchar(25)" defaultValue="ACTIVE">
                 <constraints nullable="false"/>
             </column>
         </createTable>
@@ -44,13 +44,13 @@
     <!-- Creating many-to-many 'user_role' table -->
     <changeSet id="1.0.2" author="Vladislav Yaroshchuk">
         <createTable schemaName="public" tableName="user_role">
-            <column name="user_id" type="BIGINT">
+            <column name="user_id" type="bigint">
                 <constraints primaryKey="true"
                              primaryKeyName="pk_user_role"
                              nullable="false"/>
             </column>
 
-            <column name="role_id" type="BIGINT">
+            <column name="role_id" type="bigint">
                 <constraints primaryKey="true"
                              primaryKeyName="pk_user_role"
                              nullable="false"/>
@@ -82,15 +82,15 @@
     <!-- Creating 'chat' table -->
     <changeSet id="1.0.5" author="Vladislav Yaroshchuk">
         <createTable schemaName="public" tableName="chat">
-            <column name="id" type="BIGINT" autoIncrement="true">
+            <column name="id" type="bigint" autoIncrement="true">
                 <constraints primaryKey="true" nullable="false"/>
             </column>
 
-            <column name="name" type="VARCHAR(50)">
+            <column name="name" type="varchar(50)">
                 <constraints nullable="false" unique="true"/>
             </column>
 
-            <column name="status" type="VARCHAR(25)" defaultValue="ACTIVE">
+            <column name="status" type="varchar(25)" defaultValue="ACTIVE">
                 <constraints nullable="false"/>
             </column>
         </createTable>
@@ -99,13 +99,13 @@
     <!-- Creating many-to-many 'user_chat' table -->
     <changeSet id="1.0.6" author="Vladislav Yaroshchuk">
         <createTable schemaName="public" tableName="user_chat">
-            <column name="user_id" type="BIGINT">
+            <column name="user_id" type="bigint">
                 <constraints primaryKey="true"
                              primaryKeyName="pk_user_chat"
                              nullable="false"/>
             </column>
 
-            <column name="chat_id" type="BIGINT">
+            <column name="chat_id" type="bigint">
                 <constraints primaryKey="true"
                              primaryKeyName="pk_user_chat"
                              nullable="false"/>
@@ -133,27 +133,27 @@
     <!-- Creating 'message' table -->
     <changeSet id="1.0.9" author="Vladislav Yaroshchuk">
         <createTable schemaName="public" tableName="message">
-            <column name="id" type="BIGINT" autoIncrement="true">
+            <column name="id" type="bigint" autoIncrement="true">
                 <constraints primaryKey="true" nullable="false"/>
             </column>
 
-            <column name="chat_id" type="BIGINT">
+            <column name="chat_id" type="bigint">
                 <constraints nullable="true"/>
             </column>
 
-            <column name="author_id" type="BIGINT">
+            <column name="author_id" type="bigint">
                 <constraints nullable="true"/>
             </column>
 
-            <column name="time_stamp" type="TIMESTAMP WITHOUT TIME ZONE">
+            <column name="time_stamp" type="timestamp">
                 <constraints nullable="false"/>
             </column>
 
-            <column name="content" type="VARCHAR(255)">
+            <column name="content" type="varchar(255)">
                 <constraints nullable="false"/>
             </column>
 
-            <column name="status" type="VARCHAR(25)" defaultValue="ACTIVE">
+            <column name="status" type="varchar(25)" defaultValue="ACTIVE">
                 <constraints nullable="false"/>
             </column>
         </createTable>
