@@ -23,11 +23,6 @@ import javax.validation.Valid;
 @RestController
 @RequestMapping(value = "/api/v1/auth")
 public class AuthenticationsRESTControllerV1 {
-    private static final String LOGIN_ENDPOINT = "login";
-    private static final String SIGN_UP_ENDPOINT = "sign-up";
-    private static final String TOKENS_REFRESH_ENDPOINT = "tokens-refresh";
-    private static final String PASSWORD_UPDATE_ENDPOINT = "password-update";
-
     private AuthenticationManager authenticationManager;
     private JWTTokenProvider jwtTokenProvider;
     private UserService userService;
@@ -47,8 +42,8 @@ public class AuthenticationsRESTControllerV1 {
         this.userService = userService;
     }
 
-    @PostMapping(LOGIN_ENDPOINT)
-    public ResponseEntity<?> login(@RequestBody @Valid LoginRequestDTO requestDTO) {
+    @PostMapping("login")
+    public ResponseEntity<GeneratedTokensDTO> login(@RequestBody @Valid LoginRequestDTO requestDTO) {
         try {
             String username = requestDTO.getUsername();
             String password = requestDTO.getPassword();
@@ -61,8 +56,8 @@ public class AuthenticationsRESTControllerV1 {
         }
     }
 
-    @PostMapping(SIGN_UP_ENDPOINT)
-    public ResponseEntity<?> signUp(@RequestBody @Valid SingUpRequestDTO requestDTO) {
+    @PostMapping("sign-up")
+    public ResponseEntity<GeneratedTokensDTO> signUp(@RequestBody @Valid SingUpRequestDTO requestDTO) {
         String username = requestDTO.getUsername();
         String password = requestDTO.getPassword();
 
@@ -83,12 +78,12 @@ public class AuthenticationsRESTControllerV1 {
         return login(new LoginRequestDTO(username, password));
     }
 
-    @PostMapping(TOKENS_REFRESH_ENDPOINT)
-    public ResponseEntity<?> getNewTokens(@RequestBody @Valid TokensRefreshRequestDTO requestDTO, HttpServletRequest request, Authentication authentication) {
+    @PostMapping("tokens-refresh")
+    public ResponseEntity<GeneratedTokensDTO> getNewTokens(@RequestBody @Valid TokensRefreshRequestDTO requestDTO, HttpServletRequest request, Authentication authentication) {
         return generateTokens(authentication.getName(), requestDTO.getNewRefreshTokenNeeded());
     }
 
-    @PutMapping(PASSWORD_UPDATE_ENDPOINT)
+    @PutMapping("password-update")
     public ResponseEntity<?> passwordUpdate(@RequestBody @Valid PasswordUpdateRequestDTO requestDTO, Authentication authentication) {
         try {
             User user = userService.findByUsername(authentication.getName());
@@ -109,11 +104,11 @@ public class AuthenticationsRESTControllerV1 {
         }
     }
 
-    private ResponseEntity<?> generateTokens(String username) {
+    private ResponseEntity<GeneratedTokensDTO> generateTokens(String username) {
         return generateTokens(username, true);
     }
 
-    private ResponseEntity<?> generateTokens(String username, boolean getNewRefreshToken) {
+    private ResponseEntity<GeneratedTokensDTO> generateTokens(String username, boolean getNewRefreshToken) {
         User user = userService.findByUsername(username);
         if (user == null) {
             return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
@@ -126,10 +121,10 @@ public class AuthenticationsRESTControllerV1 {
         response.setUsername(username);
 
         response.setSessionToken(sessionToken);
-        response.setSessionExpiresOn(jwtTokenProvider.getTokenExpiration(sessionToken).getTime() / 1000);
+        response.setSessionExpiresOn(jwtTokenProvider.getTokenExpiration(sessionToken).getTime());
 
         response.setRefreshToken(refreshToken);
-        response.setRefreshExpiresOn(getNewRefreshToken ? jwtTokenProvider.getTokenExpiration(refreshToken).getTime() / 1000 : 0);
+        response.setRefreshExpiresOn(getNewRefreshToken ? jwtTokenProvider.getTokenExpiration(refreshToken).getTime() : 0);
 
         return ResponseEntity.status(HttpStatus.CREATED).body(response);
     }

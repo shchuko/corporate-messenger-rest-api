@@ -25,6 +25,7 @@ public class GetMessagesRequestDTO {
 
     public enum SupportedActions {
         GET_MESSAGES_BEFORE_TIMESTAMP,
-        GET_MESSAGES_AFTER_TIMESTAMP
+        GET_MESSAGES_AFTER_TIMESTAMP,
+        GET_ALL_MESSAGES
     }
 }

@@ -2,6 +2,7 @@ package com.shchuko.corporatemessenger.service;
 
 import com.shchuko.corporatemessenger.model.RoleTypes;
 import com.shchuko.corporatemessenger.model.User;
+import java.util.List;
 
 /**
  * @author shchuko
@@ -52,4 +53,6 @@ public interface UserService {
      * @return User if found, null if not
      */
     User findById(long id);
+
+    List<User> getAllUsers();
 }

@@ -28,8 +28,6 @@ import java.util.stream.Collectors;
 @RestController
 @RequestMapping(value = "/api/v1/messenger")
 public class MessengerRESTControllerV1 {
-    private static final String CHATS_ENDPOINT = "chats";
-    private static final String MESSAGES_ENDPOINT = "messages";
 
     private UserService userService;
 
@@ -55,8 +53,9 @@ public class MessengerRESTControllerV1 {
         this.messageService = messageService;
     }
 
-    @PutMapping(value = MESSAGES_ENDPOINT)
-    public ResponseEntity<GetMessagesResponseDTO> getMessages(@RequestBody @Valid GetMessagesRequestDTO requestDTO, Authentication authentication) {
+    @PutMapping(value = "messages")
+    public ResponseEntity<GetMessagesResponseDTO> getMessages(
+            @RequestBody @Valid GetMessagesRequestDTO requestDTO, Authentication authentication) {
         Chat chat = chatService.getChatByName(requestDTO.getChatName());
         if (chat == null) {
             return ResponseEntity.badRequest().build();
@@ -66,12 +65,17 @@ public class MessengerRESTControllerV1 {
             return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
         }
 
-        Date checkDate = new Date(requestDTO.getTimestamp() * 1000);
+        Date checkDate = new Date(requestDTO.getTimestamp());
         Predicate<Message> predicate;
-        if (requestDTO.getAction().equals(GetMessagesRequestDTO.SupportedActions.GET_MESSAGES_AFTER_TIMESTAMP.name())) {
+        if (requestDTO.getAction()
+                .equals(GetMessagesRequestDTO.SupportedActions.GET_MESSAGES_AFTER_TIMESTAMP.name())) {
             predicate = message -> message.getTimeStamp().after(checkDate);
-        } else if (requestDTO.getAction().equals(GetMessagesRequestDTO.SupportedActions.GET_MESSAGES_BEFORE_TIMESTAMP.name())) {
+        } else if (requestDTO.getAction()
+                .equals(GetMessagesRequestDTO.SupportedActions.GET_MESSAGES_BEFORE_TIMESTAMP.name())) {
             predicate = message -> message.getTimeStamp().before(checkDate);
+        } else if (requestDTO.getAction()
+                .equals(GetMessagesRequestDTO.SupportedActions.GET_ALL_MESSAGES.name())) {
+            predicate = any -> true;
         } else {
             return ResponseEntity.badRequest().build();
         }
@@ -80,14 +84,16 @@ public class MessengerRESTControllerV1 {
                 .filter(predicate).map(message ->
                         new MessageDTO(userService.findById(message.getAuthorId()).getUsername(),
                                 message.getContent(),
-                                message.getTimeStamp().getTime() / 1000))
+                                message.getTimeStamp().getTime()))
                 .collect(Collectors.toList());
 
-        return ResponseEntity.ok(new GetMessagesResponseDTO(requestDTO.getChatName(), responseMessages));
+        return ResponseEntity.ok(
+                new GetMessagesResponseDTO(requestDTO.getChatName(), responseMessages));
     }
 
-    @PostMapping(value = MESSAGES_ENDPOINT)
-    public ResponseEntity<SendMessageResponseDTO> sendMessage(@RequestBody @Valid SendMessageRequestDTO requestDTO, Authentication authentication) {
+    @PostMapping(value = "messages")
+    public ResponseEntity<SendMessageResponseDTO> sendMessage(
+            @RequestBody @Valid SendMessageRequestDTO requestDTO, Authentication authentication) {
 
         Chat chat = chatService.getChatByName(requestDTO.getChatName());
         User author = userService.findByUsername(authentication.getName());
@@ -109,11 +115,12 @@ public class MessengerRESTControllerV1 {
         message.setContent(requestDTO.getMessageContent());
 
         return new ResponseEntity<>(
-                new SendMessageResponseDTO(messageService.createMessage(message).getTimeStamp().getTime() / 1000),
+                new SendMessageResponseDTO(
+                        messageService.createMessage(message).getTimeStamp().getTime()),
                 HttpStatus.CREATED);
     }
 
-    @GetMapping(value = CHATS_ENDPOINT)
+    @GetMapping(value = "chats")
     public ResponseEntity<GetUserChatsResponseDTO> getUserChats(Authentication authentication) {
         Set<Chat> chats = userService.findByUsername(authentication.getName()).getChats();
         List<ChatDTO> chatsDTO = chats.stream()
@@ -124,12 +131,14 @@ public class MessengerRESTControllerV1 {
         return ResponseEntity.ok(new GetUserChatsResponseDTO(chatsDTO));
     }
 
-    @PostMapping(value = CHATS_ENDPOINT)
-    public ResponseEntity<?> createChat(@RequestBody CreateChatRequestDTO requestDTO, Authentication authentication) {
+    @PostMapping(value = "chats")
+    public ResponseEntity<?> createChat(@RequestBody CreateChatRequestDTO requestDTO,
+                                        Authentication authentication) {
         if (chatService.getChatByName(requestDTO.getChatName()) != null) {
             return ResponseEntity
                     .status(HttpStatus.CONFLICT)
-                    .body(new CreateChatResponseDTO(CreateChatResponseDTO.StatusTemplates.ALREADY_EXISTS.name()));
+                    .body(new CreateChatResponseDTO(
+                            CreateChatResponseDTO.StatusTemplates.ALREADY_EXISTS.name()));
         }
 
         requestDTO.getMembers().add(authentication.getName());
@@ -141,7 +150,8 @@ public class MessengerRESTControllerV1 {
         if (chatMembers.size() < 2) {
             return ResponseEntity
                     .status(HttpStatus.CONFLICT)
-                    .body(new CreateChatResponseDTO(CreateChatResponseDTO.StatusTemplates.NOT_ENOUGH_MEMBERS.name()));
+                    .body(new CreateChatResponseDTO(
+                            CreateChatResponseDTO.StatusTemplates.NOT_ENOUGH_MEMBERS.name()));
         }
 
         Chat chat = new Chat();
@@ -155,8 +165,9 @@ public class MessengerRESTControllerV1 {
                 .body(new CreateChatResponseDTO(CreateChatResponseDTO.StatusTemplates.SUCCESSFUL.name()));
     }
 
-    @PutMapping(value = CHATS_ENDPOINT)
-    public ResponseEntity<AddChatMembersResponseDTO> addChatMembers(@RequestBody AddChatMembersRequestDTO requestDTO, Authentication authentication) {
+    @PutMapping(value = "chats")
+    public ResponseEntity<AddChatMembersResponseDTO> addChatMembers(
+            @RequestBody AddChatMembersRequestDTO requestDTO, Authentication authentication) {
         Chat chat = chatService.getChatByName(requestDTO.getChatName());
         if (chat == null) {
             return ResponseEntity.badRequest().build();
@@ -191,4 +202,15 @@ public class MessengerRESTControllerV1 {
                 .body(new AddChatMembersResponseDTO(AddChatMembersResponseDTO.StatusTemplates.SUCCESSFUL.name()));
 
     }
+
+    @GetMapping("interlocutors")
+    public ResponseEntity<List<String>> getUsernames(Authentication authentication) {
+        String myUsername = authentication.getName();
+        return ResponseEntity.ok().body(
+                userService.getAllUsers().stream()
+                        .map(User::getUsername)
+                        .filter(item -> !myUsername.equals(item))
+                        .collect(Collectors.toList()));
+    }
+
 }

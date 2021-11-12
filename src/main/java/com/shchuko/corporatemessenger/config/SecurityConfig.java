@@ -29,15 +29,6 @@ public class SecurityConfig extends WebSecurityConfigurerAdapter {
 
     private UserDetailsService userService;
 
-    private static final String API_ENDPOINT_PREFIX = "/api/v1";
-
-    private static final String LOGIN_ENDPOINT = API_ENDPOINT_PREFIX + "/auth/login";
-    private static final String SIGN_UP_ENDPOINT = API_ENDPOINT_PREFIX + "/auth/sing-up";
-    private static final String TOKEN_REFRESH_ENDPOINT = API_ENDPOINT_PREFIX + "/auth/tokens-refresh";
-    private static final String PASSWORD_UPDATE_ENDPOINT = API_ENDPOINT_PREFIX + "/auth/password-update";
-    private static final String ADMIN_ENDPOINT = API_ENDPOINT_PREFIX + "/admin/**";
-    private static final String MESSENGER_ENDPOINT = API_ENDPOINT_PREFIX + "/messenger/**";
-
     public SecurityConfig() {
 
     }
@@ -77,14 +68,14 @@ public class SecurityConfig extends WebSecurityConfigurerAdapter {
             .and()
                 .addFilterBefore(new JWTHasSessionTokenFilter(tokenProvider), BasicAuthenticationFilter.class)
                 .authorizeRequests()
-                .antMatchers(LOGIN_ENDPOINT).permitAll()
-                .antMatchers(SIGN_UP_ENDPOINT).permitAll()
-                .antMatchers(ADMIN_ENDPOINT).hasRole(RoleTypes.ROLE_ADMIN.getShorten())
-                .antMatchers(MESSENGER_ENDPOINT).hasRole(RoleTypes.ROLE_USER.getShorten())
-                .antMatchers(PASSWORD_UPDATE_ENDPOINT).authenticated()
+                .antMatchers("/api/v1/auth/login").permitAll()
+                .antMatchers("/api/v1/auth/sing-up").permitAll()
+                .antMatchers("/api/v1/admin/**").hasRole(RoleTypes.ROLE_ADMIN.getShorten())
+                .antMatchers("/api/v1/messenger/**").hasRole(RoleTypes.ROLE_USER.getShorten())
+                .antMatchers("/api/v1/auth/password-update").authenticated()
             .and()
                 .addFilterBefore(new JWTHasRefreshTokenFilter(tokenProvider), BasicAuthenticationFilter.class)
                 .authorizeRequests()
-                .antMatchers(TOKEN_REFRESH_ENDPOINT).authenticated();
+                .antMatchers("/api/v1/auth/tokens-refresh").authenticated();
     }
 }

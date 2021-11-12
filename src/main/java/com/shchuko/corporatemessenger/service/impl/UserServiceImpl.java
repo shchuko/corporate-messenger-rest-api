@@ -6,6 +6,7 @@ import com.shchuko.corporatemessenger.model.User;
 import com.shchuko.corporatemessenger.repository.SystemRoleRepository;
 import com.shchuko.corporatemessenger.repository.UserRepository;
 import com.shchuko.corporatemessenger.service.UserService;
+import java.util.List;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.stereotype.Service;
@@ -108,6 +109,11 @@ public class UserServiceImpl implements UserService {
     @Override
     public User findById(long id) {
         return userRepository.findById(id);
+    }
+
+    @Override
+    public List<User> getAllUsers() {
+        return userRepository.findAll();
     }
 
 }

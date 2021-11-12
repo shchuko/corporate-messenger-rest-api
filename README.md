@@ -40,9 +40,9 @@ Header: `Content-Type: application/json`
 ```json
 {
     "sessionToken": "eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJzb21lVXNlcjEiLCJyZWZyZXNoIjpmYWxzZSwiaWF0IjoxNTk0MDA5NDQzLCJleHAiOjE1OTQzMDk0NDN9.8TcVDIIKHdpmqTWIQ7MmSToQtH7sKCa_BM9vVpqKAnk",
-    "sessionExpiresOn": 1594309443,
+    "sessionExpiresOn": 1594309443000,
     "refreshToken": "eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJzb21lVXNlcjEiLCJyZWZyZXNoIjp0cnVlLCJpYXQiOjE1OTQwMDk0NDMsImV4cCI6MTU5NDAxMTI0M30.D4xVTpqfwCrhMROOpqMx8RJgAsl_-7nGAmMgy3s-0L0",
-    "refreshExpiresOn": 1594011243,
+    "refreshExpiresOn": 1594011243000,
     "username": "someUser"
 }
 ```
@@ -63,7 +63,7 @@ Header: `Content-Type: application/json`
 {
     "action":"GET_MESSAGES_BEFORE_TIMESTAMP",
     "chatName":"someChat",
-    "timestamp":1694007343
+    "timestamp":1694007343000
 }
 ```
 
@@ -75,12 +75,12 @@ Header: `Content-Type: application/json`
         {
             "author": "someUser",
             "content": "how are you?",
-            "timestamp": 1594007079
+            "timestamp": 1594007079000
         },
         {
             "author": "someOtherUser",
             "content": "how are you ? (someOtherUser)",
-            "timestamp": 1594007636
+            "timestamp": 1594007636000
         }
     ]
 }
