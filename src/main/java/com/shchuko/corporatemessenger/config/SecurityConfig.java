@@ -34,7 +34,7 @@ public class SecurityConfig extends WebSecurityConfigurerAdapter {
     private static final String LOGIN_ENDPOINT = API_ENDPOINT_PREFIX + "/auth/login";
     private static final String SIGN_UP_ENDPOINT = API_ENDPOINT_PREFIX + "/auth/sing-up";
     private static final String TOKEN_REFRESH_ENDPOINT = API_ENDPOINT_PREFIX + "/auth/tokens-refresh";
-
+    private static final String PASSWORD_UPDATE_ENDPOINT = API_ENDPOINT_PREFIX + "/auth/password-update";
     private static final String ADMIN_ENDPOINT = API_ENDPOINT_PREFIX + "/admin/**";
     private static final String MESSENGER_ENDPOINT = API_ENDPOINT_PREFIX + "/messenger/**";
 
@@ -81,6 +81,7 @@ public class SecurityConfig extends WebSecurityConfigurerAdapter {
                 .antMatchers(SIGN_UP_ENDPOINT).permitAll()
                 .antMatchers(ADMIN_ENDPOINT).hasRole(RoleTypes.ROLE_ADMIN.getShorten())
                 .antMatchers(MESSENGER_ENDPOINT).hasRole(RoleTypes.ROLE_USER.getShorten())
+                .antMatchers(PASSWORD_UPDATE_ENDPOINT).authenticated()
             .and()
                 .addFilterBefore(new JWTHasRefreshTokenFilter(tokenProvider), BasicAuthenticationFilter.class)
                 .authorizeRequests()

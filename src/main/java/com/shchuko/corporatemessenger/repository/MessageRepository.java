@@ -11,5 +11,7 @@ import java.util.List;
 public interface MessageRepository extends JpaRepository<Message, Long> {
     Message findById(long id);
 
+    List<Message> findDistinctByAuthorIdOrderByTimeStampDesc(long authorId);
+
     List<Message> findDistinctByChatIdOrderByTimeStampDesc(long chatId);
 }

@@ -1,4 +1,4 @@
-package com.shchuko.corporatemessenger.dto;
+package com.shchuko.corporatemessenger.dto.auth;
 
 import lombok.AllArgsConstructor;
 import lombok.Data;
@@ -10,7 +10,7 @@ import lombok.NoArgsConstructor;
 @Data
 @AllArgsConstructor
 @NoArgsConstructor
-public class LoginRequestDTO {
-    private String username = "";
-    private String password = "";
+public class PasswordUpdateRequestDTO {
+    private String oldPassword;
+    private String newPassword;
 }

@@ -1,10 +1,9 @@
 package com.shchuko.corporatemessenger.model;
 
 import lombok.Data;
-import lombok.EqualsAndHashCode;
 
 import javax.persistence.*;
-import java.util.List;
+import java.util.*;
 
 /**
  * @author shchuko
@@ -12,7 +11,6 @@ import java.util.List;
 @Entity
 @Table(name = "chat", schema = "public")
 @Data
-@EqualsAndHashCode(callSuper = true)
 public class Chat extends BaseEntityWithStatus {
     @Column(name = "name")
     private String name;
@@ -21,10 +19,40 @@ public class Chat extends BaseEntityWithStatus {
     @JoinTable(name = "user_chat",
             joinColumns = {@JoinColumn(name = "chat_id", referencedColumnName = "id")},
             inverseJoinColumns = {@JoinColumn(name = "user_id", referencedColumnName = "id")})
-    private List<User> members;
+
+    private Set<User> members;
 
     @OneToMany(mappedBy = "chat", fetch = FetchType.EAGER)
+    @OrderBy(value = "timeStamp")
     private List<Message> messages;
 
+    @PostLoad
+    private void postLoad() {
+        if (members == null) {
+            this.members = new HashSet<>();
+        }
 
+        if (messages == null) {
+            this.messages = new ArrayList<>();
+        }
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+        if (!super.equals(o)) return false;
+        Chat chat = (Chat) o;
+        return Objects.equals(this.getId(), chat.getId());
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(this.getId());
+    }
+
+    @Override
+    public String toString() {
+        return this.getClass().getCanonicalName() + super.toString();
+    }
 }

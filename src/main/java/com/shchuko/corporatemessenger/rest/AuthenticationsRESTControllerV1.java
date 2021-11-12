@@ -1,8 +1,9 @@
 package com.shchuko.corporatemessenger.rest;
 
-import com.shchuko.corporatemessenger.dto.LoginRequestDTO;
-import com.shchuko.corporatemessenger.dto.SingUpRequestDTO;
-import com.shchuko.corporatemessenger.dto.TokenUpdateRequestDTO;
+import com.shchuko.corporatemessenger.dto.auth.LoginRequestDTO;
+import com.shchuko.corporatemessenger.dto.auth.PasswordUpdateRequestDTO;
+import com.shchuko.corporatemessenger.dto.auth.SingUpRequestDTO;
+import com.shchuko.corporatemessenger.dto.auth.TokenUpdateRequestDTO;
 import com.shchuko.corporatemessenger.model.User;
 import com.shchuko.corporatemessenger.security.jwt.JWTTokenProvider;
 import com.shchuko.corporatemessenger.service.UserService;
@@ -73,11 +74,11 @@ public class AuthenticationsRESTControllerV1 {
             String password = requestDTO.getPassword();
 
             if (userService.findByUsername(username) != null) {
-                return new ResponseEntity<>(HttpStatus.CONFLICT);
+                return ResponseEntity.status(HttpStatus.CONFLICT).build();
             }
 
             if (username.isEmpty() || password.isEmpty()) {
-                return new ResponseEntity<>(HttpStatus.NOT_ACCEPTABLE);
+                return ResponseEntity.status(HttpStatus.NOT_ACCEPTABLE).build();
             }
 
             User user = new User();
@@ -118,6 +119,26 @@ public class AuthenticationsRESTControllerV1 {
         return generateTokens(authentication.getName(), requestDTO.isNewRefreshTokenNeeded());
     }
 
+    @PostMapping("password-update")
+    public ResponseEntity<?> passwordUpdate(@RequestBody PasswordUpdateRequestDTO requestDTO, Authentication authentication) {
+        try {
+            User user = userService.findByUsername(authentication.getName());
+            String oldPassword = requestDTO.getOldPassword();
+            String newPassword = requestDTO.getNewPassword();
+
+            if (user == null || oldPassword == null || newPassword == null || newPassword.isEmpty()) {
+                return ResponseEntity.badRequest().build();
+            }
+
+            if (userService.updatePassword(user, oldPassword, newPassword)) {
+                return ResponseEntity.status(HttpStatus.CREATED).build();
+            }
+            return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
+        } catch (AuthenticationException e) {
+            throw new BadCredentialsException("Invalid username or password", e);
+        }
+    }
+
     private ResponseEntity<?> generateTokens(String username) {
         return generateTokens(username, true);
     }
@@ -136,6 +157,6 @@ public class AuthenticationsRESTControllerV1 {
             response.put("refreshToken", jwtTokenProvider.createRefreshToken(username));
         }
 
-        return new ResponseEntity<>(response, HttpStatus.CREATED);
+        return ResponseEntity.status(HttpStatus.CREATED).body(response);
     }
 }
