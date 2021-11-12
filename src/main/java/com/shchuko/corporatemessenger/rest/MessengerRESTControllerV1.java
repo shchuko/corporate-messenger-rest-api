@@ -14,7 +14,11 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 
-import java.util.*;
+import javax.validation.Valid;
+import java.util.Date;
+import java.util.List;
+import java.util.Objects;
+import java.util.Set;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
 
@@ -52,47 +56,48 @@ public class MessengerRESTControllerV1 {
     }
 
     @GetMapping(value = MESSAGES_ENDPOINT)
-    public ResponseEntity<GetMessagesResponseDTO> getMessages(@RequestBody GetMessagesRequestDTO requestDTO, Authentication authentication) {
-        if (requestDTO == null || requestDTO.getChatName() == null || requestDTO.getAction() == null) {
+    public ResponseEntity<GetMessagesResponseDTO> getMessages(@RequestBody @Valid GetMessagesRequestDTO requestDTO, Authentication authentication) {
+        Chat chat = chatService.getChatByName(requestDTO.getChatName());
+        if (chat == null) {
             return ResponseEntity.badRequest().build();
         }
 
-        Chat chat = chatService.getChatByName(requestDTO.getChatName());
+        if (!chat.getMembers().contains(userService.findByUsername(authentication.getName()))) {
+            return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
+        }
 
+        Date checkDate = new Date(requestDTO.getTimestamp() * 1000);
         Predicate<Message> predicate;
-
         if (requestDTO.getAction().equals(GetMessagesRequestDTO.SupportedActions.GET_MESSAGES_AFTER_TIMESTAMP.name())) {
-            predicate = message -> message.getTimeStamp().before(requestDTO.getTimestamp());
+            predicate = message -> message.getTimeStamp().after(checkDate);
         } else if (requestDTO.getAction().equals(GetMessagesRequestDTO.SupportedActions.GET_MESSAGES_BEFORE_TIMESTAMP.name())) {
-            predicate = message -> message.getTimeStamp().after(requestDTO.getTimestamp());
+            predicate = message -> message.getTimeStamp().before(checkDate);
         } else {
             return ResponseEntity.badRequest().build();
         }
 
         List<MessageDTO> responseMessages = chat.getMessages().stream()
-                .filter(predicate)
-                .map(message -> new MessageDTO(
-                        userService.findById(message.getAuthorId()).getUsername(),
-                        message.getContent(),
-                        message.getTimeStamp())).collect(Collectors.toList());
+                .filter(predicate).map(message ->
+                        new MessageDTO(userService.findById(message.getAuthorId()).getUsername(),
+                                message.getContent(),
+                                message.getTimeStamp().getTime() / 1000))
+                .collect(Collectors.toList());
 
-        GetMessagesResponseDTO responseDTO = new GetMessagesResponseDTO();
-        responseDTO.setChatName(requestDTO.getChatName());
-        responseDTO.setMessages(responseMessages);
-        return ResponseEntity.ok(responseDTO);
+        return ResponseEntity.ok(new GetMessagesResponseDTO(requestDTO.getChatName(), responseMessages));
     }
 
     @PostMapping(value = MESSAGES_ENDPOINT)
-    public ResponseEntity<SendMessageResponseDTO> sendMessage(@RequestBody SendMessageRequestDTO requestDTO, Authentication authentication) {
-        if (requestDTO == null || requestDTO.getChatName() == null || requestDTO.getMessageContent() == null) {
-            return ResponseEntity.badRequest().build();
-        }
+    public ResponseEntity<SendMessageResponseDTO> sendMessage(@RequestBody @Valid SendMessageRequestDTO requestDTO, Authentication authentication) {
 
         Chat chat = chatService.getChatByName(requestDTO.getChatName());
         User author = userService.findByUsername(authentication.getName());
 
         if (chat == null || author == null) {
-            return ResponseEntity.noContent().build();
+            return ResponseEntity.badRequest().build();
+        }
+
+        if (!chat.getMembers().contains(userService.findByUsername(authentication.getName()))) {
+            return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
         }
 
         Message message = new Message();
@@ -103,66 +108,62 @@ public class MessengerRESTControllerV1 {
         message.setStatus(EntityStatus.ACTIVE);
         message.setContent(requestDTO.getMessageContent());
 
-        Message createdMessage = messageService.createMessage(message);
-        if (createdMessage != null) {
-            return new ResponseEntity<>(new SendMessageResponseDTO(createdMessage.getTimeStamp()), HttpStatus.CREATED);
-        }
-
-        return new ResponseEntity<>(HttpStatus.INTERNAL_SERVER_ERROR);
+        return new ResponseEntity<>(
+                new SendMessageResponseDTO(messageService.createMessage(message).getTimeStamp().getTime() / 1000),
+                HttpStatus.CREATED);
     }
 
     @GetMapping(value = CHATS_ENDPOINT)
     public ResponseEntity<GetUserChatsResponseDTO> getUserChats(Authentication authentication) {
         Set<Chat> chats = userService.findByUsername(authentication.getName()).getChats();
-        List<ChatDTO> chatsDTO = chats.stream().map(chat -> new ChatDTO(chat.getName())).collect(Collectors.toList());
+        List<ChatDTO> chatsDTO = chats.stream()
+                .map(chat -> new ChatDTO(
+                        chat.getName(),
+                        chat.getMembers().stream().map(User::getUsername).collect(Collectors.toSet())))
+                .collect(Collectors.toList());
         return ResponseEntity.ok(new GetUserChatsResponseDTO(chatsDTO));
     }
 
     @PostMapping(value = CHATS_ENDPOINT)
     public ResponseEntity<?> createChat(@RequestBody CreateChatRequestDTO requestDTO, Authentication authentication) {
-        if (requestDTO == null || requestDTO.getChatName() == null || requestDTO.getMembers() == null) {
-            return ResponseEntity.badRequest().build();
-        }
-
         if (chatService.getChatByName(requestDTO.getChatName()) != null) {
-            return new ResponseEntity<>(
-                    new CreateChatResponseDTO(CreateChatResponseDTO.StatusTemplates.ALREADY_EXISTS.name()),
-                    HttpStatus.CONFLICT);
+            return ResponseEntity
+                    .status(HttpStatus.CONFLICT)
+                    .body(new CreateChatResponseDTO(CreateChatResponseDTO.StatusTemplates.ALREADY_EXISTS.name()));
         }
 
         requestDTO.getMembers().add(authentication.getName());
-        Set<User> chatMembers = requestDTO.getMembers()
-                .stream().map(username -> userService.findByUsername(username))
-                .filter(Objects::nonNull).collect(Collectors.toSet());
+        Set<User> chatMembers = requestDTO.getMembers().stream()
+                .map(username -> userService.findByUsername(username))
+                .filter(Objects::nonNull)
+                .collect(Collectors.toSet());
 
         if (chatMembers.size() < 2) {
-            return new ResponseEntity<>(
-                    new CreateChatResponseDTO(CreateChatResponseDTO.StatusTemplates.NOT_ENOUGH_MEMBERS.name()),
-                    HttpStatus.CONFLICT);
+            return ResponseEntity
+                    .status(HttpStatus.CONFLICT)
+                    .body(new CreateChatResponseDTO(CreateChatResponseDTO.StatusTemplates.NOT_ENOUGH_MEMBERS.name()));
         }
+
         Chat chat = new Chat();
         chat.setName(requestDTO.getChatName());
-        chat.setStatus(EntityStatus.ACTIVE);
         chat.setMembers(chatMembers);
+        chat.setStatus(EntityStatus.ACTIVE);
 
-        if (chatService.createNewChat(chat) != null) {
-            return new ResponseEntity<>(
-                    new CreateChatResponseDTO(CreateChatResponseDTO.StatusTemplates.SUCCESSFUL.name()),
-                    HttpStatus.CREATED);
-        }
-
-        return new ResponseEntity<>(HttpStatus.INTERNAL_SERVER_ERROR);
+        chatService.createNewChat(chat);
+        return ResponseEntity
+                .status(HttpStatus.CREATED)
+                .body(new CreateChatResponseDTO(CreateChatResponseDTO.StatusTemplates.SUCCESSFUL.name()));
     }
 
     @PutMapping(value = CHATS_ENDPOINT)
     public ResponseEntity<AddChatMembersResponseDTO> addChatMembers(@RequestBody AddChatMembersRequestDTO requestDTO, Authentication authentication) {
-        if (requestDTO == null || requestDTO.getChatName() == null || requestDTO.getMembers() == null) {
-            return ResponseEntity.badRequest().build();
-        }
-
         Chat chat = chatService.getChatByName(requestDTO.getChatName());
         if (chat == null) {
             return ResponseEntity.badRequest().build();
+        }
+
+        if (!chat.getMembers().contains(userService.findByUsername(authentication.getName()))) {
+            return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
         }
 
         requestDTO.getMembers().add(authentication.getName());
@@ -173,9 +174,9 @@ public class MessengerRESTControllerV1 {
                 .filter(user -> !oldChatMembers.contains(user)).collect(Collectors.toSet());
 
         if (newChatMembers.isEmpty()) {
-            return new ResponseEntity<>(
-                    new AddChatMembersResponseDTO(AddChatMembersResponseDTO.StatusTemplates.NOTHING_TO_ADD.name()),
-                    HttpStatus.CONFLICT);
+            return ResponseEntity
+                    .status(HttpStatus.CONFLICT)
+                    .body(new AddChatMembersResponseDTO(AddChatMembersResponseDTO.StatusTemplates.NOTHING_TO_ADD.name()));
         }
 
         if (oldChatMembers.isEmpty()) {
@@ -184,34 +185,10 @@ public class MessengerRESTControllerV1 {
             chat.getMembers().addAll(newChatMembers);
         }
 
-        if (chatService.updateChat(chat) != null) {
-            return new ResponseEntity<>(
-                    new AddChatMembersResponseDTO(AddChatMembersResponseDTO.StatusTemplates.SUCCESSFUL.name()),
-                    HttpStatus.CREATED);
-        }
+        chatService.updateChat(chat);
+        return ResponseEntity
+                .status(HttpStatus.CREATED)
+                .body(new AddChatMembersResponseDTO(AddChatMembersResponseDTO.StatusTemplates.SUCCESSFUL.name()));
 
-        return new ResponseEntity<>(HttpStatus.INTERNAL_SERVER_ERROR);
     }
-
-//
-//    @GetMapping(value = "users/{id}")
-//    public ResponseEntity<UserDTO> getUserById(@PathVariable(name = "id") long id) {
-//        User user = userService.findById(id);
-//        if (user == null) {
-//            return new ResponseEntity<>(HttpStatus.NO_CONTENT);
-//        }
-//
-//        return new ResponseEntity<>(new UserDTO(user), HttpStatus.OK);
-//    }
-//
-//    @GetMapping(value = "user-logins/{username}")
-//    public ResponseEntity<UserDTO> getUserByUsername(@PathVariable(name = "username") String username) {
-//        User user = userService.findByUsername(username);
-//        if (user == null) {
-//            return ResponseEntity.noContent().build();
-//        }
-//
-//        return ResponseEntity.ok(new UserDTO(user));
-//    }
-
 }

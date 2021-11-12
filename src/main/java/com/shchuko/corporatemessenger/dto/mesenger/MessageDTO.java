@@ -4,8 +4,6 @@ import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
-import java.util.Date;
-
 /**
  * @author shchuko
  */
@@ -15,5 +13,5 @@ import java.util.Date;
 public class MessageDTO {
     private String author;
     private String content;
-    private Date timestamp;
+    private Long timestamp;
 }

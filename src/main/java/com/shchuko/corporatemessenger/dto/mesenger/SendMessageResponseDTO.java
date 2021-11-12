@@ -4,8 +4,6 @@ import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
-import java.util.Date;
-
 /**
  * @author shchuko
  */
@@ -13,5 +11,5 @@ import java.util.Date;
 @NoArgsConstructor
 @AllArgsConstructor
 public class SendMessageResponseDTO {
-    private Date messageReceivedOn;
+    private Long messageReceivedOn;
 }
