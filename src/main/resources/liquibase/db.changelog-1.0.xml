@@ -5,12 +5,12 @@
 
     <!-- Creating 'user' table -->
     <changeSet id="1.0.0" author="Vladislav Yaroshchuk">
-        <createTable tableName="user">
+        <createTable schemaName="public" tableName="user">
             <column name="id" type="BIGINT" autoIncrement="true">
                 <constraints primaryKey="true" nullable="false"/>
             </column>
 
-            <column name="login" type="VARCHAR(100)">
+            <column name="username" type="VARCHAR(100)">
                 <constraints nullable="false" unique="true"/>
             </column>
 
@@ -26,7 +26,7 @@
 
     <!-- Creating 'role' table -->
     <changeSet id="1.0.1" author="Vladislav Yaroshchuk">
-        <createTable tableName="role">
+        <createTable schemaName="public" tableName="role">
             <column name="id" type="BIGINT" autoIncrement="true">
                 <constraints primaryKey="true" nullable="false"/>
             </column>
@@ -43,7 +43,7 @@
 
     <!-- Creating many-to-many 'user_role' table -->
     <changeSet id="1.0.2" author="Vladislav Yaroshchuk">
-        <createTable tableName="user_role">
+        <createTable schemaName="public" tableName="user_role">
             <column name="user_id" type="BIGINT">
                 <constraints primaryKey="true"
                              primaryKeyName="pk_user_role"
@@ -81,13 +81,13 @@
 
     <!-- Creating 'chat' table -->
     <changeSet id="1.0.5" author="Vladislav Yaroshchuk">
-        <createTable tableName="chat">
+        <createTable schemaName="public" tableName="chat">
             <column name="id" type="BIGINT" autoIncrement="true">
                 <constraints primaryKey="true" nullable="false"/>
             </column>
 
             <column name="name" type="VARCHAR(50)">
-                <constraints nullable="false"/>
+                <constraints nullable="false" unique="true"/>
             </column>
 
             <column name="status" type="VARCHAR(25)" defaultValue="ACTIVE">
@@ -98,7 +98,7 @@
 
     <!-- Creating many-to-many 'user_chat' table -->
     <changeSet id="1.0.6" author="Vladislav Yaroshchuk">
-        <createTable tableName="user_chat">
+        <createTable schemaName="public" tableName="user_chat">
             <column name="user_id" type="BIGINT">
                 <constraints primaryKey="true"
                              primaryKeyName="pk_user_chat"
@@ -132,7 +132,7 @@
 
     <!-- Creating 'message' table -->
     <changeSet id="1.0.9" author="Vladislav Yaroshchuk">
-        <createTable tableName="message">
+        <createTable schemaName="public" tableName="message">
             <column name="id" type="BIGINT" autoIncrement="true">
                 <constraints primaryKey="true" nullable="false"/>
             </column>
@@ -183,7 +183,7 @@
 
     <!-- Creating 'user_message' table (many-to-many) -->
     <changeSet id="1.0.12" author="Vladislav Yaroshchuk">
-        <createTable tableName="user_message">
+        <createTable schemaName="public" tableName="user_message">
             <column name="user_id" type="BIGINT">
                 <constraints primaryKey="true"
                              primaryKeyName="pk_user_message"
@@ -228,40 +228,40 @@
                                  onDelete="CASCADE"/>
     </changeSet>
 
-    <!-- Creating 'session' table (for user sessions) -->
+    <!-- Creating root user. Username: 'root', password: 'root' -->
     <changeSet id="1.0.15" author="Vladislav Yaroshchuk">
-        <createTable tableName="session">
-            <column name="id" type="BIGINT" autoIncrement="true">
-                <constraints primaryKey="true" nullable="false"/>
-            </column>
-
-            <column name="user_id" type="BIGINT">
-                <constraints nullable="false"/>
-            </column>
-
-            <column name="token" type="VARCHAR(255)">
-                <constraints nullable="true"/>
-            </column>
-
-            <column name="refresh_token" type="VARCHAR(255)">
-                <constraints nullable="false"/>
-            </column>
-
-            <column name="expires_on" type="TIMESTAMP WITHOUT TIME ZONE">
-                <constraints nullable="true"/>
-            </column>
-        </createTable>
+        <insert schemaName="public" tableName="user">
+            <column name="username" value="root"/>
+            <column name="password_hash" value="$2a$04$1fjmvcSMKptHBTrpJm./8uXnaJWivdsZLYrOf2diTNS1D66nD03re"/>
+            <column name="status" value="ACTIVE"/>
+        </insert>
     </changeSet>
 
-    <!-- Add FK, 'session'->'user' -->
     <changeSet id="1.0.16" author="Vladislav Yaroshchuk">
-        <addForeignKeyConstraint baseColumnNames="user_id"
-                                 baseTableName="session"
-                                 constraintName="fk_session_user_id"
-                                 referencedColumnNames="id"
-                                 referencedTableName="user"
-                                 onUpdate="NO ACTION"
-                                 onDelete="CASCADE"/>
+        <insert schemaName="public" tableName="role">
+            <column name="name" value="ROLE_USER"/>
+            <column name="status" value="ACTIVE"/>
+        </insert>
     </changeSet>
 
+    <changeSet id="1.0.17" author="Vladislav Yaroshchuk">
+        <insert schemaName="public" tableName="role">
+            <column name="name" value="ROLE_ADMIN"/>
+            <column name="status" value="ACTIVE"/>
+        </insert>
+    </changeSet>
+
+    <changeSet id="1.0.18" author="Vladislav Yaroshchuk">
+        <insert schemaName="public" tableName="user_role">
+            <column name="user_id" valueComputed="(SELECT id FROM public.user WHERE username = 'root')"/>
+            <column name="role_id" valueComputed="(SELECT id FROM public.role WHERE name = 'ROLE_USER')"/>
+        </insert>
+    </changeSet>
+
+    <changeSet id="1.0.19" author="Vladislav Yaroshchuk">
+        <insert schemaName="public" tableName="user_role">
+            <column name="user_id" valueComputed="(SELECT id FROM public.user WHERE username = 'root')"/>
+            <column name="role_id" valueComputed="(SELECT id FROM public.role WHERE name = 'ROLE_ADMIN')"/>
+        </insert>
+    </changeSet>
 </databaseChangeLog>
