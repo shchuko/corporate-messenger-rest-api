@@ -11,6 +11,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
 
@@ -324,6 +325,216 @@ public class MessengerRESTControllerV1Test {
         assertThat(result.getStatusCode()).isEqualTo(ResponseEntity.ok().build().getStatusCode());
         assertThat(Objects.requireNonNull(result.getBody()).toArray())
                 .containsExactlyInAnyOrder(usernames.stream().filter(name -> !name.equals(testUsername)).toArray());
+    }
+
+    @Test
+    void TestGetUserChats() {
+        User user = new User(testUsername, null, null, new HashSet<>(), null);
+        Chat chat = new Chat("testChat", new HashSet<>(Collections.singletonList(user)), Collections.emptyList());
+        Chat chat2 = new Chat("testChat2", new HashSet<>(Collections.singletonList(user)), Collections.emptyList());
+
+        user.setId(1);
+
+        chat.setId(1);
+        chat2.setId(2);
+        user.getChats().add(chat);
+        user.getChats().add(chat2);
+
+        List<Chat> chats = Arrays.asList(chat, chat2);
+        Mockito.when(userService.findByUsername(user.getUsername())).thenReturn(user);
+        Mockito.when(userService.findById(user.getId())).thenReturn(user);
+        Mockito.when(chatService.getChatByName(chat.getName())).thenReturn(chat);
+        Mockito.when(chatService.getChatById(chat.getId())).thenReturn(chat);
+        Mockito.when(chatService.getChatByName(chat2.getName())).thenReturn(chat2);
+        Mockito.when(chatService.getChatById(chat2.getId())).thenReturn(chat2);
+
+        ResponseEntity<GetUserChatsResponseDTO> result = controller.getUserChats(authentication);
+
+        assertThat(result.getStatusCode()).isEqualTo(ResponseEntity.ok().build().getStatusCode());
+        assertThat(Objects.requireNonNull(result.getBody()).getUserChats().toArray())
+                .containsExactlyInAnyOrder(chats.stream().map(chat1 ->
+                        new ChatDTO(
+                                chat1.getName(),
+                                chat1.getMembers().stream().map(User::getUsername)
+                                        .collect(Collectors.toSet()))).toArray());
+    }
+
+    @Test
+    void TestAddChatMembers() {
+        User user = new User(testUsername, "", Collections.emptySet(), new HashSet<>(), Collections.emptyList());
+        User user1 = new User(testUsername + "1", "null", Collections.emptySet(), new HashSet<>(), Collections.emptyList());
+        User user2 = new User(testUsername + "2", "null", Collections.emptySet(), new HashSet<>(), Collections.emptyList());
+
+        user.setId(0);
+        user1.setId(1);
+        user2.setId(2);
+
+        Chat testChat = new Chat("testChat", new HashSet<>(Arrays.asList(user, user1)), Collections.emptyList());
+        user.getChats().add(testChat);
+        user1.getChats().add(testChat);
+
+        Mockito.when(userService.findByUsername(user.getUsername())).thenReturn(user);
+        Mockito.when(userService.findByUsername(user1.getUsername())).thenReturn(user1);
+        Mockito.when(userService.findByUsername(user2.getUsername())).thenReturn(user2);
+        Mockito.when(chatService.getChatByName(testChat.getName())).thenReturn(testChat);
+        Mockito.when(chatService.updateChat(any(Chat.class))).thenAnswer(argv -> {
+            Chat chat = argv.getArgument(0, Chat.class);
+            testChat.getMembers().addAll(chat.getMembers());
+            return chat;
+        });
+
+        AddChatMembersRequestDTO requestDTO = new AddChatMembersRequestDTO("testChat",
+                new HashSet<>(Collections.singletonList(user2.getUsername())));
+
+        ResponseEntity<AddChatMembersResponseDTO> result = controller.addChatMembers(requestDTO, authentication);
+
+        assertThat(result.getStatusCode()).isEqualTo(ResponseEntity.status(HttpStatus.CREATED).build().getStatusCode());
+        assertThat(Objects.requireNonNull(result.getBody()).getStatusMessage()).isEqualTo(AddChatMembersResponseDTO.StatusTemplates.SUCCESSFUL.toString());
+    }
+
+    @Test
+    void TestAddChatMembersNothingToAdd() {
+        User user = new User(testUsername, "", Collections.emptySet(), new HashSet<>(), Collections.emptyList());
+        User user1 = new User(testUsername + "1", "null", Collections.emptySet(), new HashSet<>(), Collections.emptyList());
+        User user2 = new User(testUsername + "2", "null", Collections.emptySet(), new HashSet<>(), Collections.emptyList());
+
+        user.setId(0);
+        user1.setId(1);
+        user2.setId(2);
+
+        Chat testChat = new Chat("testChat", new HashSet<>(Arrays.asList(user, user1, user2)), Collections.emptyList());
+        user.getChats().add(testChat);
+        user1.getChats().add(testChat);
+        user2.getChats().add(testChat);
+
+        Mockito.when(userService.findByUsername(user.getUsername())).thenReturn(user);
+        Mockito.when(userService.findByUsername(user1.getUsername())).thenReturn(user1);
+        Mockito.when(userService.findByUsername(user2.getUsername())).thenReturn(user2);
+        Mockito.when(chatService.getChatByName(testChat.getName())).thenReturn(testChat);
+        Mockito.when(chatService.updateChat(any(Chat.class))).thenAnswer(argv -> {
+            Chat chat = argv.getArgument(0, Chat.class);
+            testChat.getMembers().addAll(chat.getMembers());
+            return chat;
+        });
+
+        AddChatMembersRequestDTO requestDTO = new AddChatMembersRequestDTO("testChat",
+                new HashSet<>(Collections.singletonList(user2.getUsername())));
+
+        ResponseEntity<AddChatMembersResponseDTO> result = controller.addChatMembers(requestDTO, authentication);
+
+        assertThat(result.getStatusCode()).isEqualTo(ResponseEntity.status(HttpStatus.CONFLICT).build().getStatusCode());
+        assertThat(Objects.requireNonNull(result.getBody()).getStatusMessage()).isEqualTo(AddChatMembersResponseDTO.StatusTemplates.NOTHING_TO_ADD.toString());
+    }
+
+    @Test
+    void TestAddChatMembersChatNotExists() {
+        User user = new User(testUsername, "", Collections.emptySet(), new HashSet<>(), Collections.emptyList());
+        User user1 = new User(testUsername + "1", "null", Collections.emptySet(), new HashSet<>(), Collections.emptyList());
+        User user2 = new User(testUsername + "2", "null", Collections.emptySet(), new HashSet<>(), Collections.emptyList());
+
+        user.setId(0);
+        user1.setId(1);
+        user2.setId(2);
+
+        Chat testChat = new Chat("testChat", new HashSet<>(Arrays.asList(user, user1, user2)), Collections.emptyList());
+        user.getChats().add(testChat);
+        user1.getChats().add(testChat);
+        user2.getChats().add(testChat);
+
+        Mockito.when(userService.findByUsername(user.getUsername())).thenReturn(user);
+        Mockito.when(userService.findByUsername(user1.getUsername())).thenReturn(user1);
+        Mockito.when(userService.findByUsername(user2.getUsername())).thenReturn(user2);
+
+//        Mockito.when(chatService.getChatByName(testChat.getName())).thenReturn(testChat);
+        Mockito.when(chatService.updateChat(any(Chat.class))).thenAnswer(argv -> {
+            Chat chat = argv.getArgument(0, Chat.class);
+            testChat.getMembers().addAll(chat.getMembers());
+            return chat;
+        });
+
+        AddChatMembersRequestDTO requestDTO = new AddChatMembersRequestDTO("testChat",
+                new HashSet<>(Collections.singletonList(user2.getUsername())));
+
+        ResponseEntity<AddChatMembersResponseDTO> result = controller.addChatMembers(requestDTO, authentication);
+
+        assertThat(result.getStatusCode()).isEqualTo(ResponseEntity.status(HttpStatus.BAD_REQUEST).build().getStatusCode());
+//        assertThat(Objects.requireNonNull(result.getBody()).getStatusMessage()).isEqualTo(AddChatMembersResponseDTO.StatusTemplates.NOTHING_TO_ADD.toString());
+    }
+
+    @Test
+    void TestCreateChat() {
+        User user = new User(testUsername, "", Collections.emptySet(), new HashSet<>(), Collections.emptyList());
+        User user1 = new User(testUsername + "2", "null", Collections.emptySet(), new HashSet<>(), Collections.emptyList());
+
+        user.setId(0);
+        user1.setId(1);
+
+        Mockito.when(userService.findByUsername(user.getUsername())).thenReturn(user);
+        Mockito.when(userService.findByUsername(user1.getUsername())).thenReturn(user1);
+        Mockito.when(chatService.createNewChat(any(Chat.class))).thenAnswer(args -> {
+            Chat chat = args.getArgument(0, Chat.class);
+            user.getChats().add(chat);
+            user1.getChats().add(chat);
+            return chat;
+        });
+
+        CreateChatRequestDTO requestDTO = new CreateChatRequestDTO("testChat",
+                new HashSet<>(Arrays.asList(user.getUsername(), user1.getUsername())));
+
+        ResponseEntity<CreateChatResponseDTO> result = controller.createChat(requestDTO, authentication);
+
+        assertThat(result.getStatusCode()).isEqualTo(ResponseEntity.status(HttpStatus.CREATED).build().getStatusCode());
+        assertThat(Objects.requireNonNull(result.getBody()).getStatusMessage()).isEqualTo(CreateChatResponseDTO.StatusTemplates.SUCCESSFUL.toString());
+    }
+
+    @Test
+    void TestCreateChatAlreadyExists() {
+        User user = new User(testUsername, "", Collections.emptySet(), new HashSet<>(), Collections.emptyList());
+        User user1 = new User(testUsername + "2", "null", Collections.emptySet(), new HashSet<>(), Collections.emptyList());
+
+        user.setId(0);
+        user1.setId(1);
+
+        Chat testChat = new Chat("testChat", new HashSet<>(Arrays.asList(user, user1)), Collections.emptyList());
+
+        Mockito.when(userService.findByUsername(user.getUsername())).thenReturn(user);
+        Mockito.when(userService.findByUsername(user1.getUsername())).thenReturn(user1);
+        Mockito.when(chatService.getChatByName(testChat.getName())).thenReturn(testChat);
+        Mockito.when(chatService.createNewChat(any(Chat.class))).thenAnswer(args -> {
+            Chat chat = args.getArgument(0, Chat.class);
+            user.getChats().add(chat);
+            user1.getChats().add(chat);
+            return chat;
+        });
+
+        CreateChatRequestDTO requestDTO = new CreateChatRequestDTO(testChat.getName(),
+                testChat.getMembers().stream().map(User::getUsername).collect(Collectors.toSet()));
+
+        ResponseEntity<CreateChatResponseDTO> result = controller.createChat(requestDTO, authentication);
+
+        assertThat(result.getStatusCode()).isEqualTo(ResponseEntity.status(HttpStatus.CONFLICT).build().getStatusCode());
+        assertThat(Objects.requireNonNull(result.getBody()).getStatusMessage()).isEqualTo(CreateChatResponseDTO.StatusTemplates.ALREADY_EXISTS.toString());
+    }
+
+    @Test
+    void TestCreateChatNotEnoughMembers() {
+        User user = new User(testUsername, "", Collections.emptySet(), new HashSet<>(), Collections.emptyList());
+        user.setId(0);
+
+        Mockito.when(userService.findByUsername(user.getUsername())).thenReturn(user);
+        Mockito.when(chatService.createNewChat(any(Chat.class))).thenAnswer(args -> {
+            Chat chat = args.getArgument(0, Chat.class);
+            user.getChats().add(chat);
+            return chat;
+        });
+
+        CreateChatRequestDTO requestDTO = new CreateChatRequestDTO("testChat",
+                new HashSet<>(Collections.singletonList(user.getUsername())));
+
+        ResponseEntity<CreateChatResponseDTO> result = controller.createChat(requestDTO, authentication);
+
+        assertThat(result.getStatusCode()).isEqualTo(ResponseEntity.status(HttpStatus.CONFLICT).build().getStatusCode());
+        assertThat(Objects.requireNonNull(result.getBody()).getStatusMessage()).isEqualTo(CreateChatResponseDTO.StatusTemplates.NOT_ENOUGH_MEMBERS.toString());
     }
 
 }

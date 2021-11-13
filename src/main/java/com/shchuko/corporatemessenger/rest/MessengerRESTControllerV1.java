@@ -132,7 +132,7 @@ public class MessengerRESTControllerV1 {
     }
 
     @PostMapping(value = "chats")
-    public ResponseEntity<?> createChat(@RequestBody CreateChatRequestDTO requestDTO,
+    public ResponseEntity<CreateChatResponseDTO> createChat(@RequestBody CreateChatRequestDTO requestDTO,
                                         Authentication authentication) {
         if (chatService.getChatByName(requestDTO.getChatName()) != null) {
             return ResponseEntity
